@@ -1,3 +1,4 @@
+# MANAGED BY PUPPET
 <% if @rewrite_www_to_non_www -%>
 <%- @server_name.each do |s| -%>
 server {
@@ -70,7 +71,6 @@ server {
   <%- end -%>
 <% end -%>
 <% if instance_variables.any? { |iv| iv.to_s.include? 'client_' } -%>
-
   <%- if defined? @client_body_timeout -%>
   client_body_timeout <%= @client_body_timeout %>;
   <%- end -%>
@@ -80,7 +80,6 @@ server {
   <%- if defined? @client_max_body_size -%>
   client_max_body_size <%= @client_max_body_size %>;
   <%- end -%>
-
 <% end -%>
 <% if defined? @gzip_types -%>
   gzip_types <%= @gzip_types %>;
@@ -129,7 +128,7 @@ server {
 <% end -%>
 <% if @add_header -%>
   <%- @add_header.keys.sort.each do |key| -%>
-  add_header              <%= key %> <%= @add_header[key] %>;
+  add_header              '<%= key %>' '<%= @add_header[key] %>';
   <%- end -%>
 <% end -%>
 <% if @maintenance -%>

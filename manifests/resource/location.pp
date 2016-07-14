@@ -11,6 +11,7 @@
 #     entry to include with
 #   [*location*]             - Specifies the URI associated with this location
 #     entry
+#   [*location_satisfy*]    - Allows access if all (all) or at least one (any) of the auth modules allow access.
 #   [*location_allow*]       - Array: Locations to allow connections from.
 #   [*location_deny*]        - Array: Locations to deny connections from.
 #   [*www_root*]             - Specifies the location on disk for files to be
@@ -30,6 +31,7 @@
 #   [*proxy_connect_timeout*] - Override the default the proxy connect timeout
 #     value of 90 seconds
 #   [*proxy_set_header*]     - Array of vhost headers to set
+#   [*proxy_hide_header*]    - Array of vhost headers to hide
 #   [*fastcgi*]              - location of fastcgi (host:port)
 #   [*fastcgi_param*]        - Set additional custom fastcgi_params
 #   [*fastcgi_params*]       - optional alternative fastcgi_params file to use
@@ -61,7 +63,7 @@
 #     to put before anything else inside location (used with all other types
 #     except custom_cfg). Used for logical structures such as if.
 #   [*location_custom_cfg_append*]    - Expects a array with extra directives
-#     to put before anything else inside location (used with all other types
+#     to put after anything else inside location (used with all other types
 #     except custom_cfg). Used for logical structures such as if.
 #   [*location_cfg_append*]  - Expects a hash with extra directives to put
 #     after everything else inside location (used with all other types except
@@ -146,6 +148,7 @@ define nginx::resource::location (
   $proxy_read_timeout   = $::nginx::config::proxy_read_timeout,
   $proxy_connect_timeout = $::nginx::config::proxy_connect_timeout,
   $proxy_set_header     = $::nginx::config::proxy_set_header,
+  $proxy_hide_header    = $::nginx::config::proxy_hide_header,
   $fastcgi              = undef,
   $fastcgi_param        = undef,
   $fastcgi_params       = "${::nginx::config::conf_dir}/fastcgi_params",
@@ -156,6 +159,7 @@ define nginx::resource::location (
   $ssl                  = false,
   $ssl_only             = false,
   $location_alias       = undef,
+  $location_satisfy     = undef,
   $location_allow       = undef,
   $location_deny        = undef,
   $option               = undef,
@@ -214,6 +218,7 @@ define nginx::resource::location (
   validate_string($proxy_read_timeout)
   validate_string($proxy_connect_timeout)
   validate_array($proxy_set_header)
+  validate_array($proxy_hide_header)
   if ($fastcgi != undef) {
     validate_string($fastcgi)
   }
@@ -238,6 +243,10 @@ define nginx::resource::location (
   validate_bool($ssl_only)
   if ($location_alias != undef) {
     validate_string($location_alias)
+  }
+  if ($location_satisfy != undef) {
+    validate_re($location_satisfy, '^(any|all)$',
+    "${$location_satisfy} is not supported for location_satisfy. Allowed values are 'any' and 'all'.")
   }
   if ($location_allow != undef) {
     validate_array($location_allow)
@@ -290,7 +299,9 @@ define nginx::resource::location (
     validate_string($proxy_cache_use_stale)
   }
   if ($proxy_cache_valid != false) {
-    validate_string($proxy_cache_valid)
+    if !(is_array($proxy_cache_valid) or is_string($proxy_cache_valid)) {
+      fail('$proxy_cache_valid must be a string or an array or false.')
+    }
   }
   if ($proxy_method != undef) {
     validate_string($proxy_method)
@@ -376,11 +387,9 @@ define nginx::resource::location (
 
 
   ## Create stubs for vHost File Fragment Pattern
+  $location_md5 = md5($location)
   if ($ssl_only != true) {
-    $tmpFile=md5("${vhost_sanitized}-${priority}-${location_sanitized}")
-
-    concat::fragment { $tmpFile:
-      ensure  => $ensure_real,
+    concat::fragment { "${vhost_sanitized}-${priority}-${location_md5}":
       target  => $config_file,
       content => join([
         template('nginx/vhost/location_header.erb'),
@@ -395,9 +404,7 @@ define nginx::resource::location (
   if ($ssl == true or $ssl_only == true) {
     $ssl_priority = $priority + 300
 
-    $sslTmpFile=md5("${vhost_sanitized}-${ssl_priority}-${location_sanitized}-ssl")
-    concat::fragment { $sslTmpFile:
-      ensure  => $ensure_real,
+    concat::fragment { "${vhost_sanitized}-${ssl_priority}-${location_md5}-ssl":
       target  => $config_file,
       content => join([
         template('nginx/vhost/location_header.erb'),

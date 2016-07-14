@@ -11,8 +11,6 @@
 #     streamhost on. Defaults to TCP 80
 #   [*listen_options*]      - Extra options for listen directive like
 #     'default' to catchall. Undef by default.
-#   [*location_allow*]      - Array: Locations to allow connections from.
-#   [*location_deny*]       - Array: Locations to deny connections from.
 #   [*ipv6_enable*]         - BOOL value to enable/disable IPv6 support
 #     (false|true). Module will check to see if IPv6 support exists on your
 #     system before enabling.
@@ -23,18 +21,11 @@
 #   [*ipv6_listen_options*] - Extra options for listen directive like 'default'
 #     to catchall. Template will allways add ipv6only=on. While issue
 #     jfryman/puppet-nginx#30 is discussed, default value is 'default'.
-#   [*add_header*]          - Hash: Adds headers to the HTTP response when
-#     response code is equal to 200, 204, 301, 302 or 304.
-#   [*index_files*]         - Default index files for NGINX to read when
-#     traversing a directory
-#   [*autoindex*]           - Set it on 'on' or 'off 'to activate/deactivate
-#                             autoindex directory listing. Undef by default.
 #   [*proxy*]               - Proxy server(s) for the root location to connect
 #     to.  Accepts a single value, can be used in conjunction with
 #     nginx::resource::upstream
 #   [*proxy_read_timeout*]  - Override the default the proxy read timeout value
 #     of 90 seconds
-#   [*proxy_redirect*]      - Override the default proxy_redirect value of off.
 #   [*resolver*]            - Array: Configures name servers used to resolve
 #     names of upstream servers into addresses.
 #   [*server_name*]         - List of streamhost names for which this streamhost will
@@ -60,11 +51,11 @@
 define nginx::resource::streamhost (
   $ensure                       = 'present',
   $listen_ip                    = '*',
-  $listen_port                  = '80',
+  $listen_port                  = 80,
   $listen_options               = undef,
   $ipv6_enable                  = false,
   $ipv6_listen_ip               = '::',
-  $ipv6_listen_port             = '80',
+  $ipv6_listen_port             = 80,
   $ipv6_listen_options          = 'default ipv6only=on',
   $proxy                        = undef,
   $proxy_read_timeout           = $::nginx::config::proxy_read_timeout,
@@ -83,7 +74,10 @@ define nginx::resource::streamhost (
   if !(is_array($listen_ip) or is_string($listen_ip)) {
     fail('$listen_ip must be a string or array.')
   }
-  if !is_integer($listen_port) {
+  if is_string($listen_port) {
+    warning('DEPRECATION: String $listen_port must be converted to an integer. Integer string support will be removed in a future release.')
+  }
+  elsif !is_integer($listen_port) {
     fail('$listen_port must be an integer.')
   }
   if ($listen_options != undef) {
@@ -93,7 +87,10 @@ define nginx::resource::streamhost (
   if !(is_array($ipv6_listen_ip) or is_string($ipv6_listen_ip)) {
     fail('$ipv6_listen_ip must be a string or array.')
   }
-  if !is_integer($ipv6_listen_port) {
+  if is_string($ipv6_listen_port) {
+    warning('DEPRECATION: String $ipv6_listen_port must be converted to an integer. Integer string support will be removed in a future release.')
+  }
+  elsif !is_integer($ipv6_listen_port) {
     fail('$ipv6_listen_port must be an integer.')
   }
   validate_string($ipv6_listen_options)

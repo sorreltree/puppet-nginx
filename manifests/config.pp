@@ -43,6 +43,8 @@ class nginx::config(
   ### END Module/App Configuration ###
 
   ### START Nginx Configuration ###
+  $accept_mutex                   = 'on',
+  $accept_mutex_delay             = '500ms',
   $client_body_buffer_size        = '128k',
   $client_max_body_size           = '10m',
   $events_use                     = false,
@@ -60,7 +62,7 @@ class nginx::config(
   $gzip_min_length                = 20,
   $gzip_http_version              = 1.1,
   $gzip_proxied                   = 'off',
-  $gzip_types                     = 'text/html',
+  $gzip_types                     = undef,
   $gzip_vary                      = 'off',
   $http_cfg_append                = false,
   $http_tcp_nodelay               = 'on',
@@ -91,6 +93,7 @@ class nginx::config(
     'X-Real-IP $remote_addr',
     'X-Forwarded-For $proxy_add_x_forwarded_for',
   ],
+  $proxy_hide_header              = [],
   $sendfile                       = 'on',
   $server_tokens                  = 'on',
   $spdy                           = 'off',
@@ -119,16 +122,20 @@ class nginx::config(
   }
   validate_string($multi_accept)
   validate_array($proxy_set_header)
+  validate_array($proxy_hide_header)
   if ($proxy_http_version != undef) {
     validate_string($proxy_http_version)
   }
   if ($proxy_conf_template != undef) {
-    warn('The $proxy_conf_template parameter is deprecated and has no effect.')
+    warning('The $proxy_conf_template parameter is deprecated and has no effect.')
   }
   validate_bool($confd_purge)
   validate_bool($vhost_purge)
-  if ($proxy_cache_path != false) {
-    validate_string($proxy_cache_path)
+  if ( $proxy_cache_path != false) {
+    if ( is_string($proxy_cache_path) or is_hash($proxy_cache_path)) {}
+    else {
+      fail('proxy_cache_path must be a string or a hash')
+    }
   }
   validate_re($proxy_cache_levels, '^[12](:[12])*$')
   validate_string($proxy_cache_keys_zone)

@@ -125,6 +125,24 @@ describe 'nginx::config' do
           :notmatch => /pid/,
         },
         {
+          :title => 'should set accept_mutex on',
+          :attr  => 'accept_mutex',
+          :value => 'on',
+          :match => '  accept_mutex on;',
+        },
+        {
+          :title => 'should set accept_mutex off',
+          :attr  => 'accept_mutex',
+          :value => 'off',
+          :match => '  accept_mutex off;',
+        },
+        {
+          :title => 'should set accept_mutex_delay',
+          :attr  => 'accept_mutex_delay',
+          :value => '500s',
+          :match => '  accept_mutex_delay 500s;',
+        },
+        {
           :title => 'should set worker_connections',
           :attr  => 'worker_connections',
           :value => '100',
@@ -458,12 +476,21 @@ describe 'nginx::config' do
           :notmatch => 'proxy_http_version',
         },
         {
-          :title => 'should contain ordered appended directives',
+          :title => 'should contain ordered appended proxy_set_header directives',
           :attr  => 'proxy_set_header',
           :value => ['header1','header2'],
           :match => [
             '  proxy_set_header        header1;',
             '  proxy_set_header        header2;',
+          ],
+        },
+        {
+          :title => 'should contain ordered appended proxy_hide_header directives',
+          :attr  => 'proxy_hide_header',
+          :value => ['header1','header2'],
+          :match => [
+            '  proxy_hide_header        header1;',
+            '  proxy_hide_header        header2;',
           ],
         },
         {
