@@ -8,5 +8,5 @@ class nginx::resource::upstream::collect (
 )
 {
   # Collect exported members:
-  ::Nginx::Resource::Upstream::Member <<| upstream == $name |>>
+  ::Nginx::Resource::Upstream::Member <<| upstream == $upstream_name |>>
 }
